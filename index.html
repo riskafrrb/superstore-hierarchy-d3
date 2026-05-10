@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Superstore Radial Tree</title>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+
+body{
+    margin:0;
+    overflow:hidden;
+
+    /* background gradient biar lebih aesthetic */
+    background: linear-gradient(to bottom right, #0f172a, #1e293b);
+
+    font-family:'Poppins', sans-serif;
+}
+
+/* svg full layar */
+svg{
+    width:100vw;
+    height:100vh;
+}
+
+/* garis tree */
+.link{
+    fill:none;
+    stroke:#94a3b8;
+    stroke-opacity:0.5;
+    stroke-width:2px;
+}
+
+/* text */
+.node text{
+    font-size:13px;
+    fill:white;
+    font-weight:500;
+}
+
+/* efek hover */
+.node circle{
+    transition:0.3s;
+    cursor:pointer;
+}
+
+.node circle:hover{
+    r:10;
+    opacity:0.8;
+}
+
+</style>
+</head>
+
+<body>
+
+<svg></svg>
+
+<script>
+
+const width = 1300;
+const radius = width / 2;
+
+/* layout tree */
+const tree = d3.tree()
+    .size([2 * Math.PI, radius - 200]);
+
+/* svg */
+const svg = d3.select("svg")
+    .attr("viewBox", [-width/2, -width/2, width, width]);
+
+/* load json */
+d3.json("data.json").then(data => {
+
+    const root = d3.hierarchy(data);
+
+    tree(root);
+
+    /* garis */
+    svg.append("g")
+        .selectAll("path")
+        .data(root.links())
+        .join("path")
+        .attr("class","link")
+        .attr("d",
+            d3.linkRadial()
+                .angle(d => d.x)
+                .radius(d => d.y)
+        );
+
+    /* node */
+    const node = svg.append("g")
+        .selectAll("g")
+        .data(root.descendants())
+        .join("g")
+        .attr("class","node")
+        .attr("transform", d => `
+            rotate(${d.x * 180 / Math.PI - 90})
+            translate(${d.y},0)
+        `);
+
+    /* lingkaran */
+    node.append("circle")
+        .attr("r", d => {
+
+            /* ukuran beda tiap level */
+            if(d.depth === 0) return 12;
+            if(d.depth === 1) return 9;
+            if(d.depth === 2) return 7;
+            return 5;
+
+        })
+
+        /* warna beda */
+        .attr("fill", d => {
+
+            if(d.depth === 0) return "#f43f5e";      // merah pink
+            if(d.depth === 1) return "#8b5cf6";      // ungu
+            if(d.depth === 2) return "#06b6d4";      // cyan
+            return "#facc15";                        // kuning
+
+        })
+
+        /* glow effect */
+        .style("filter","drop-shadow(0px 0px 8px rgba(255,255,255,0.3))");
+
+    /* text */
+    node.append("text")
+        .attr("dy","0.31em")
+        .attr("x", d => d.x < Math.PI ? 15 : -15)
+        .attr("text-anchor", d => d.x < Math.PI ? "start" : "end")
+        .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
+        .text(d => d.data.name);
+
+    /* tooltip bawaan */
+    node.append("title")
+        .text(d => `Node: ${d.data.name}`);
+
+});
+
+</script>
+
+</body>
+</html>
